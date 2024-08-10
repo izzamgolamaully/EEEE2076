@@ -82,13 +82,12 @@ void MainWindow::on_actionOpen_File_triggered()
     QStringList fileNames = QFileDialog::getOpenFileNames(
         this,
         tr("Open Files"),
-        "C:\\",
+        QDir::homePath(),
         tr("STL Files (*.stl)")
     );
 
     foreach(QString path, fileNames) {
         QFileInfo fileInfo(path);
-
         if (fileInfo.isFile()) {
             loadStlFile(path);
         }
@@ -193,6 +192,12 @@ void MainWindow::editSelectedItem() {
     ModelPart* part = static_cast<ModelPart*>(index.internalPointer());
 
     /* Run a dialog to change colour ... */
+    QColor color = QColorDialog::getColor(Qt::white, this, "Select Color");
+    if (color.isValid()) {
+        part->setColour(color);
+        part->getActor()->GetProperty()->SetColor(color.redF() / 255.0, color.greenF() / 255.0, color.blueF() / 255.0);
+        this->updateRender();
+    }
 }
 
 void MainWindow::updateRender()
@@ -284,6 +289,34 @@ void MainWindow::addActorsToVR_recursive(const QModelIndex& index) {
 }
 
 void MainWindow::onStartVR() {
+    // Check if the STL file is loaded and visible
+    if (this->renderer->GetActors()->GetNumberOfItems() == 0) {
+        QMessageBox::warning(this, "VR Start Error", "No model is loaded. Please load an STL file before starting VR.");
+        return;
+    }
+
+    addActorsToVR();  // Add actors from the scene to the VR environment
+
+    renderThread->start();
+    emit statusUpdateMessage("VR mode started", 2000);
+
+    qDebug() << "Starting VR mode...";
+    if (this->renderer->GetActors()->GetNumberOfItems() == 0) {
+        qDebug() << "No actors found in renderer!";
+        QMessageBox::warning(this, "VR Start Error", "No model is loaded. Please load an STL file before starting VR.");
+        return;
+    }
+
+    try {
+        addActorsToVR();
+        renderThread->start();
+        emit statusUpdateMessage("VR mode started", 2000);
+    }
+    catch (std::exception& e) {
+        qDebug() << "Exception occurred while starting VR: " << e.what();
+        QMessageBox::critical(this, "VR Start Error", "An error occurred while starting VR.");
+    }
+
     // Initialize VR Renderer, Render Window, and Interactor
     vrRenderer = vtkSmartPointer<vtkOpenVRRenderer>::New();
     vrRenderWindow = vtkSmartPointer<vtkOpenVRRenderWindow>::New();
@@ -303,8 +336,8 @@ void MainWindow::onStartVR() {
 }
 
 void MainWindow::onStopVR() {
-    if (vrRenderWindow && vrInteractor) {
-        vrInteractor->TerminateApp();
-    }
+    renderThread->terminate();
+    renderThread->wait();  // Ensure the thread is completely stopped
+    emit statusUpdateMessage("VR mode stopped", 2000);
 }
 
