@@ -77,8 +77,8 @@
     </property>
     <addaction name="actionOpen_File"/>
     <addaction name="actionSave_File"/>
-    <addaction name="actionstartVR"/>
-    <addaction name="actionstopVR"/>
+    <addaction name="actionstart_VR"/>
+    <addaction name="actionstop_VR"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -94,8 +94,8 @@
    </attribute>
    <addaction name="actionOpen_File"/>
    <addaction name="actionSave_File"/>
-   <addaction name="actionstartVR"/>
-   <addaction name="actionstopVR"/>
+   <addaction name="actionstart_VR"/>
+   <addaction name="actionstop_VR"/>
   </widget>
   <action name="actionOpen_File">
    <property name="icon">
@@ -115,7 +115,7 @@
     <string>Save File</string>
    </property>
   </action>
-  <action name="actionstartVR">
+  <action name="actionstart_VR">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/Icons/Icons/startVR.png</normaloff>:/Icons/Icons/startVR.png</iconset>
@@ -124,7 +124,7 @@
     <string>startVR</string>
    </property>
   </action>
-  <action name="actionstopVR">
+  <action name="actionstop_VR">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/Icons/Icons/stopVR.png</normaloff>:/Icons/Icons/stopVR.png</iconset>

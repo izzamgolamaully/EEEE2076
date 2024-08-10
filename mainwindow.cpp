@@ -1,9 +1,7 @@
-/* Project headers */
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "optiondialog.h"
 
-/* Qt headers */
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -11,9 +9,7 @@
 #include <QStatusBar>
 #include <QDirIterator>
 
-/* Vtk headers */
 #include <vtkSmartPointer.h>
-#include <vtkCylinderSource.h>
 #include <vtkActor.h>
 #include <vtkProperty.h>
 #include <vtkCamera.h>
@@ -27,6 +23,9 @@
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkSTLReader.h>
 #include <QVTKOpenGLNativeWidget.h>
+#include <vtkOpenVRRenderWindow.h>
+#include <vtkOpenVRRenderer.h>
+#include <vtkOpenVRRenderWindowInteractor.h>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -44,10 +43,9 @@ MainWindow::MainWindow(QWidget* parent)
     // Set background color to make the model more visible
     vtkNew<vtkNamedColors> colors;
     renderer->SetBackground(colors->GetColor3d("white").GetData());
-        renderWindow->AddRenderer(renderer);
+    renderWindow->AddRenderer(renderer);
 
     renderThread = new VRRenderThread();
-
 
     connect(this, &MainWindow::statusUpdateMessage, ui->statusbar, &QStatusBar::showMessage);
 
@@ -59,7 +57,7 @@ MainWindow::MainWindow(QWidget* parent)
     ModelPart* rootItem = this->partList->getRootItem();
 
     /* Add 3 top level items */
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 1; i++) {
         QString name = QString("TopLevel %1").arg(i);
         QString visible("true");
 
@@ -68,7 +66,10 @@ MainWindow::MainWindow(QWidget* parent)
 
         rootItem->appendChild(childItem);
     }
-    //renderThread = new VRRenderThread();
+
+    // Connect VR start and stop actions
+    connect(ui->actionstart_VR, &QAction::triggered, this, &MainWindow::onStartVR);
+    connect(ui->actionstop_VR, &QAction::triggered, this, &MainWindow::onStopVR);
 }
 
 MainWindow::~MainWindow()
@@ -89,7 +90,6 @@ void MainWindow::on_actionOpen_File_triggered()
         QFileInfo fileInfo(path);
 
         if (fileInfo.isFile()) {
-            // Handle file
             loadStlFile(path);
         }
     }
@@ -155,11 +155,10 @@ void MainWindow::VRActorsFromTree(const QModelIndex& index)
         /* Get item at this stage of the tree */
         ModelPart* selectedPart = static_cast<ModelPart*>(index.internalPointer());
 
-        // Assuming there is a getActor() method in ModelPart class
         vtkActor* actor = selectedPart->getActor();
         if (actor != nullptr) {
             // Add the actor to the VR renderer (could be different from the standard renderer)
-            this->renderer->AddActor(actor);
+            this->vrRenderer->AddActor(actor);
         }
     }
 
@@ -234,7 +233,7 @@ void MainWindow::updateRenderFromTree(const QModelIndex& index) {
             return;
         }
 
-        vtkActor* actor = selectedPart->getActor(); // Assuming there is a getActor() method in ModelPart class
+        vtkActor* actor = selectedPart->getActor();
 
         // Check if the actor is not null
         if (actor == nullptr) {
@@ -243,7 +242,7 @@ void MainWindow::updateRenderFromTree(const QModelIndex& index) {
         }
 
         // Get the color from the ModelPart and set it to the actor
-        QColor color = selectedPart->get_Color(); // Assuming there is a get_Color() method in ModelPart class
+        QColor color = selectedPart->get_Color();
         actor->GetProperty()->SetColor(color.redF(), color.greenF(), color.blueF());
 
         renderer->AddActor(actor);
@@ -266,13 +265,11 @@ void MainWindow::addActorsToVR() {
 
 void MainWindow::addActorsToVR_recursive(const QModelIndex& index) {
     if (index.isValid()) {
-        /* Get item at this stage of the tree */
         ModelPart* selectedPart = static_cast<ModelPart*>(index.internalPointer());
 
-        /* Add it to the VTK renderer */
         vtkActor* actor = selectedPart->getActor();
         if (actor != nullptr) {
-            renderer->AddActor(actor);
+            vrRenderer->AddActor(actor);
         }
     }
 
@@ -286,4 +283,28 @@ void MainWindow::addActorsToVR_recursive(const QModelIndex& index) {
     }
 }
 
+void MainWindow::onStartVR() {
+    // Initialize VR Renderer, Render Window, and Interactor
+    vrRenderer = vtkSmartPointer<vtkOpenVRRenderer>::New();
+    vrRenderWindow = vtkSmartPointer<vtkOpenVRRenderWindow>::New();
+    vrRenderWindow->AddRenderer(vrRenderer);
+    vrInteractor = vtkSmartPointer<vtkOpenVRRenderWindowInteractor>::New();
+    vrInteractor->SetRenderWindow(vrRenderWindow);
+
+    // Add actors from the tree to the VR scene
+    addActorsToVR_recursive(partList->index(0, 0, QModelIndex()));
+
+    // Render the VR scene
+    vrRenderWindow->Render();
+    vrInteractor->Start();
+
+    // Optionally stop VR when the window closes
+    vrInteractor->TerminateApp();
+}
+
+void MainWindow::onStopVR() {
+    if (vrRenderWindow && vrInteractor) {
+        vrInteractor->TerminateApp();
+    }
+}
 

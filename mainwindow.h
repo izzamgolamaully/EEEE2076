@@ -5,6 +5,7 @@
 #include <vtkRenderer.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 
+
 #define USE_GUI_RENDERER
 
 #include "ModelPartList.h"
@@ -34,6 +35,8 @@ public slots:
     void editSelectedItem();
     void addNewItem();
     void on_actionOpen_File_triggered();
+    void onStartVR();
+    void onStopVR();
 
 signals:
     void statusUpdateMessage(const QString& message, int timeout);
@@ -43,6 +46,9 @@ private:
     ModelPartList* partList;
     vtkSmartPointer<vtkRenderer> renderer;
     vtkSmartPointer<vtkGenericOpenGLRenderWindow> renderWindow;
+    vtkSmartPointer<vtkOpenVRRenderWindow> vrRenderWindow;
+    vtkSmartPointer<vtkOpenVRRenderer> vrRenderer;
+    vtkSmartPointer<vtkOpenVRRenderWindowInteractor> vrInteractor;
     VRRenderThread* renderThread;
 };
 
