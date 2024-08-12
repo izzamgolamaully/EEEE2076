@@ -42,8 +42,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     // Set background color to make the model more visible
     vtkNew<vtkNamedColors> colors;
-    renderer->SetBackground(colors->GetColor3d("white").GetData());
-    renderWindow->AddRenderer(renderer);
+    //renderer->SetBackground(colors->GetColor3d("white").GetData());
+    //renderWindow->AddRenderer(renderer);
 
     renderThread = new VRRenderThread();
 
@@ -133,6 +133,17 @@ void MainWindow::loadStlFile(const QString& fileName)
     vtkSmartPointer<vtkNamedColors> colors = vtkSmartPointer<vtkNamedColors>::New();
     actor->GetProperty()->SetColor(colors->GetColor3d("Tomato").GetData());
 
+
+    //Create another mapper
+    vtkSmartPointer<vtkPolyDataMapper> mapper2 = vtkSmartPointer<vtkPolyDataMapper>::New();
+    mapper2->SetInputData(polyData);
+
+    // Created another actor
+    vtkSmartPointer<vtkActor> actor2 = vtkSmartPointer<vtkActor>::New();
+    actor2->SetMapper(mapper2);
+
+    renderThread->addActorOffline(actor2);
+
     // Add the actor to the renderer
     this->renderer->AddActor(actor);
 
@@ -208,6 +219,7 @@ void MainWindow::updateRender()
         return;
     }
 
+    /*
     // Remove all items from VTK Renderer
     renderer->RemoveAllViewProps();
 
@@ -223,6 +235,7 @@ void MainWindow::updateRender()
 
     // Reset the camera
     resetCamera();
+    */
 }
 
 
@@ -295,10 +308,13 @@ void MainWindow::onStartVR() {
         return;
     }
 
-    addActorsToVR();  // Add actors from the scene to the VR environment
+   // addActorsToVR();  // Add actors from the scene to the VR environment
 
     renderThread->start();
     emit statusUpdateMessage("VR mode started", 2000);
+
+
+    /*
 
     qDebug() << "Starting VR mode...";
     if (this->renderer->GetActors()->GetNumberOfItems() == 0) {
@@ -333,6 +349,7 @@ void MainWindow::onStartVR() {
 
     // Optionally stop VR when the window closes
     vrInteractor->TerminateApp();
+    */
 }
 
 void MainWindow::onStopVR() {

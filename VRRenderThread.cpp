@@ -72,6 +72,7 @@ void VRRenderThread::addActorOffline( vtkActor* actor ) {
 
 		actors->AddItem(actor);
 	}
+
 }
 
 
